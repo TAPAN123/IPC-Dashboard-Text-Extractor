@@ -1,0 +1,5 @@
+if extracted_text == "":
+    # Trigger classifier prediction
+    icon_tensor = transform(cropped_img).unsqueeze(0)
+    predicted_class = torch.argmax(model(icon_tensor))
+    extracted_text = label_map[predicted_class.item()]  # "Low Fuel"

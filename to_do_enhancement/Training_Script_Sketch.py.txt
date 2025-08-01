@@ -1,0 +1,28 @@
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+import torch
+
+# Data transforms
+transform = transforms.Compose([
+    transforms.Resize((128, 128)),
+    transforms.ToTensor()
+])
+
+# Replace with actual directory paths
+train_data = datasets.ImageFolder("icons/train", transform=transform)
+train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
+
+model = IPCIconClassifier(num_classes=4)  # e.g. Fuel, Battery, Seatbelt, Temp
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+for epoch in range(20):
+    for images, labels in train_loader:
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    print(f"Epoch {epoch+1}, Loss: {loss.item():.4f}")
