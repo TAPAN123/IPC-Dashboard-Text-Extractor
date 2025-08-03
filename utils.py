@@ -5,8 +5,20 @@ import easyocr
 from openpyxl import Workbook, load_workbook
 from datetime import datetime
 import os
+import difflib
+import string
+
 
 reader = easyocr.Reader(['en'])
+ALERT_KEYWORDS = [
+    "low fuel", "check engine", "lane departure warning", "battery warning",
+    "oil pressure", "abs", "tpms", "brake warning", "airbag fault"
+]
+
+def normalize(text):
+    return text.lower().translate(str.maketrans("", "", string.punctuation)).strip()
+
+
 
 def preview_and_crop(img_path):
     image = cv2.imread(img_path)
@@ -39,11 +51,20 @@ def preview_and_crop(img_path):
 
     return cropped_img
 
+
 def extract_text_from_cropped(image):
     result = reader.readtext(image)
-    extracted_text = [text[1] for text in result]
-    return " | ".join(extracted_text)
+    extracted_text = [normalize(text[1]) for text in result]
 
+    matched_texts: list[str] = []
+    for text in extracted_text:
+        best_match = difflib.get_close_matches(text, ALERT_KEYWORDS, n=1, cutoff=0.5)
+        if best_match:
+            formatted = best_match[0].title()
+            if formatted not in matched_texts:  # Prevent duplicates
+                matched_texts.append(formatted)
+
+    return " | ".join(matched_texts)
 
 
 def save_to_excel(image_data, filename):
