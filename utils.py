@@ -8,27 +8,33 @@ import os
 import difflib
 import string
 
+#reader = easyocr.Reader(['en'])
+reader = None
 
-reader = easyocr.Reader(['en'])
 ALERT_KEYWORDS = [
-    "low fuel", "check engine", "lane departure warning", "battery warning",
-    "oil pressure", "abs", "tpms", "brake warning", "airbag fault"
+    "Anti-Lock Braking System", "Traction Control Indicator","Traction Control Malfunction", "Battery", "Airbag", "Brake", "Abs", "Tire Pressure low", "Door Open", "Low fuel", "Check engine", "Lane departure warning",
+    "Oil pressure low", "Master Warning", "tpms"
 ]
+
+def get_ocr_reader():
+    global reader
+    if reader is None:
+        reader = easyocr.Reader(['en'], gpu=False)
+    return reader
 
 def normalize(text):
     return text.lower().translate(str.maketrans("", "", string.punctuation)).strip()
 
-
-
 def preview_and_crop(img_path):
     image = cv2.imread(img_path)
-
+    factor = 0.5  # or calculate based on original size
     # Resize image to 50% of assumed 1920x1080 resolution
-    screen_width = int(0.5 * 1920)
-    screen_height = int(0.5 * 1080)
+    screen_width = int(image.shape[1] * factor)
+    screen_height = int(image.shape[0] * factor)
     resized = cv2.resize(image, (screen_width, screen_height))
 
     roi = cv2.selectROI("Crop IPC Image (50% screen)", resized, showCrosshair=True)
+    cv2.waitKey(1)
     cv2.destroyAllWindows()
 
     if sum(roi) == 0:
@@ -53,7 +59,8 @@ def preview_and_crop(img_path):
 
 
 def extract_text_from_cropped(image):
-    result = reader.readtext(image)
+    ocr_reader = get_ocr_reader()
+    result = ocr_reader.readtext(image)
     extracted_text = [normalize(text[1]) for text in result]
 
     matched_texts: list[str] = []
